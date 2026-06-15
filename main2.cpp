@@ -9,7 +9,9 @@
 
 using namespace std;
 
+// ==========================================
 // 1. ESTRUCTURAS DE DATOS
+// ==========================================
 struct Requerimiento {
     int id;
     int clase_id;
@@ -19,36 +21,38 @@ struct Requerimiento {
     int lecciones_dobles_minimas;
 };
 
+// ==========================================
 // 2. LECTURA DEL ARCHIVO DE INSTANCIAS
-void leerInstanciaTXT(string nombreArchivo, int& num_clases, int& num_profesores, int& num_dias, int& num_periodos, vector<Requerimiento>& reqs, vector<vector<vector<bool>>>& indisponibilidad) {
+// ==========================================
+void leerTXT(string nombreArchivo, int& num_clases, int& num_profesores, int& num_dias, int& num_periodos, vector<Requerimiento>& reqs, vector<vector<vector<bool>>>& indisponibilidad) {
     ifstream archivo(nombreArchivo);
     if (!archivo.is_open()) {
-        cout << "¡Error: No se pudo abrir el archivo " << nombreArchivo << "!" << endl;
+        cout << "ERROR No se pudo abrir el archivo " << nombreArchivo << endl;
         return;
     }
 
     string linea;
-    auto saltarComentarios = [&]() {
+    auto sgteLineaValida = [&]() {
         while (getline(archivo, linea)) {
-            if (linea.empty() || linea[0] == '#') continue;
+            if (linea.empty()) continue; 
             return true;
         }
         return false;
     };
 
     int min_val;
-    if(saltarComentarios()) { stringstream ss(linea); ss >> min_val >> num_clases; num_clases++; }
-    if(saltarComentarios()) { stringstream ss(linea); ss >> min_val >> num_profesores; num_profesores++; }
-    if(saltarComentarios()) { stringstream ss(linea); ss >> min_val >> num_dias; num_dias++; }
-    if(saltarComentarios()) { stringstream ss(linea); ss >> min_val >> num_periodos; num_periodos++; }
+    if(sgteLineaValida()) { stringstream ss(linea); ss >> min_val >> num_clases; num_clases++; }
+    if(sgteLineaValida()) { stringstream ss(linea); ss >> min_val >> num_profesores; num_profesores++; }
+    if(sgteLineaValida()) { stringstream ss(linea); ss >> min_val >> num_dias; num_dias++; }
+    if(sgteLineaValida()) { stringstream ss(linea); ss >> min_val >> num_periodos; num_periodos++; }
 
     indisponibilidad.assign(num_profesores, vector<vector<bool>>(num_dias, vector<bool>(num_periodos, false)));
 
     int cant_reqs;
-    if(saltarComentarios()) { stringstream ss(linea); ss >> cant_reqs; }
+    if(sgteLineaValida()) { stringstream ss(linea); ss >> cant_reqs; }
 
     for (int i = 0; i < cant_reqs; ++i) {
-        if(saltarComentarios()) {
+        if(sgteLineaValida()) {
             stringstream ss(linea);
             Requerimiento req;
             req.id = i;
@@ -58,10 +62,10 @@ void leerInstanciaTXT(string nombreArchivo, int& num_clases, int& num_profesores
     }
 
     int cant_indisp;
-    if(saltarComentarios()) { stringstream ss(linea); ss >> cant_indisp; }
+    if(sgteLineaValida()) { stringstream ss(linea); ss >> cant_indisp; }
 
     for (int i = 0; i < cant_indisp; ++i) {
-        if(saltarComentarios()) {
+        if(sgteLineaValida()) {
             stringstream ss(linea);
             int profe, dia, periodo;
             ss >> profe >> dia >> periodo;
@@ -69,10 +73,12 @@ void leerInstanciaTXT(string nombreArchivo, int& num_clases, int& num_profesores
         }
     }
     archivo.close();
-    cout << "Instancia cargada: " << num_clases << " clases, " << num_profesores << " profesores, " << reqs.size() << " requerimientos." << endl;
+    cout << "Instancia cargada correctamente" << endl;
 }
 
+// ==========================================
 // 3. REPRESENTACIÓN Y FUNCIÓN DE EVALUACIÓN
+// ==========================================
 class Cromosoma {
 public:
     // Matriz 3D: [día][período][clase] = requerimiento_id
@@ -97,12 +103,12 @@ public:
         int num_periodos = matriz[0].size();
         int num_clases = matriz[0][0].size();
         
-        int alfa = 50; // Ponderación ventanas
-        int beta = 10; // Ponderación dobles faltantes (alfa > beta)
+        int alfa = 50; // Ponderación ventanas docentes
+        int beta = 10; // Ponderación dobles faltantes
 
-        // A. RESTRICCIONES DURAS (Hard Constraints)
+        // A. Restricciones Duras (+1000 pts)
         for (int d = 0; d < num_dias; ++d) {
-            vector<int> clases_por_req(reqs.size(), 0); // Para verificar máximo diario
+            vector<int> clases_por_req(reqs.size(), 0); 
             
             for (int p = 0; p < num_periodos; ++p) {
                 vector<int> profes_en_periodo(num_profesores, 0);
@@ -112,30 +118,24 @@ public:
                     if (req_id != -1) {
                         int profe_id = reqs[req_id].profesor_id;
                         
-                        // 1. Choque de profesores (Mismo profe, 2 clases simultáneas)
                         profes_en_periodo[profe_id]++;
-                        if (profes_en_periodo[profe_id] > 1) penalizacion += 1000; 
-                        
-                        // 2. Indisponibilidad docente
-                        if (indisponibilidad[profe_id][d][p]) penalizacion += 1000;
+                        if (profes_en_periodo[profe_id] > 1) penalizacion += 1000; // Choque profe
+                        if (indisponibilidad[profe_id][d][p]) penalizacion += 1000; // Indisponible
                         
                         clases_por_req[req_id]++;
                     } else {
-                        // 3. Ventanas de alumnos (La clase no tiene asignación en este período)
-                        penalizacion += 1000;
+                        penalizacion += 1000; // Ventana de alumnos
                     }
                 }
             }
-            // 4. Límite máximo de clases por día para una asignatura
             for(size_t r = 0; r < reqs.size(); ++r) {
                 if (clases_por_req[r] > reqs[r].max_por_dia) {
-                    penalizacion += 1000 * (clases_por_req[r] - reqs[r].max_por_dia);
+                    penalizacion += 1000 * (clases_por_req[r] - reqs[r].max_por_dia); // Exceso diario
                 }
             }
         }
 
-        // B. RESTRICCIONES BLANDAS (Soft Constraints)
-        // 1. Ventanas de Profesores
+        // B. Restricciones Blandas
         for (int d = 0; d < num_dias; ++d) {
             for (int profe_id = 0; profe_id < num_profesores; ++profe_id) {
                 int primer_bloque = -1, ultimo_bloque = -1, bloques_ocupados = 0;
@@ -162,7 +162,6 @@ public:
             }
         }
         
-        // 2. Lecciones dobles faltantes
         for (const auto& req : reqs) {
             if (req.lecciones_dobles_minimas > 0) {
                 int dobles_encontradas = 0;
@@ -170,7 +169,7 @@ public:
                     for (int p = 0; p < num_periodos - 1; ++p) {
                         if (matriz[d][p][req.clase_id] == req.id && matriz[d][p+1][req.clase_id] == req.id) {
                             dobles_encontradas++;
-                            p++; // Saltar el siguiente bloque para no contar dobles solapadas
+                            p++; 
                         }
                     }
                 }
@@ -181,20 +180,69 @@ public:
                 }
             }
         }
-
         this->fitness = penalizacion;
     }
 };
 
-// --- NUEVO: OPERADOR BINARIO (CRUZAMIENTO AD-HOC POR CLASE) ---
+// ==========================================
+// 4. GENERACIÓN DE SOLUCIÓN INICIAL
+// ==========================================
+Cromosoma generarSolucionInicial(int num_dias, int num_periodos, int num_clases, vector<Requerimiento> reqs) {
+    Cromosoma ind(num_dias, num_periodos, num_clases);
+    
+    // Greedy
+    sort(reqs.begin(), reqs.end(), [](const Requerimiento& a, const Requerimiento& b) {
+        return a.lecciones_dobles_minimas > b.lecciones_dobles_minimas;
+    });
+
+    for (const auto& req : reqs) {
+        int asignadas = 0, intentos = 0; 
+        
+        while (asignadas < req.lecciones_totales && intentos < 1000) {
+            int d = rand() % num_dias;
+            int p = rand() % num_periodos;
+            
+            // Intento de inserción doble consecutiva
+            if (req.lecciones_dobles_minimas > 0 && p < num_periodos - 1 && asignadas <= req.lecciones_totales - 2) {
+                if (ind.matriz[d][p][req.clase_id] == -1 && ind.matriz[d][p+1][req.clase_id] == -1) {
+                    ind.matriz[d][p][req.clase_id] = req.id;
+                    ind.matriz[d][p+1][req.clase_id] = req.id;
+                    asignadas += 2;
+                    continue;
+                }
+            }
+
+            // Inserción simple aleatoria
+            if (ind.matriz[d][p][req.clase_id] == -1) {
+                ind.matriz[d][p][req.clase_id] = req.id;
+                asignadas++;
+            }
+            intentos++;
+        }
+    }
+    
+    // Chequear espacios vacíos y rellenar 
+    for(int d=0; d<num_dias; d++){
+        for(int p=0; p<num_periodos; p++){
+            for(int c=0; c<num_clases; c++){
+                if(ind.matriz[d][p][c] == -1) {
+                    for(const auto& r : reqs){
+                        if(r.clase_id == c){ ind.matriz[d][p][c] = r.id; break; }
+                    }
+                }
+            }
+        }
+    }
+    return ind;
+}
+
+// ==========================================
+// 5. OPERADORES GENÉTICOS
+// ==========================================
 Cromosoma cruzar(const Cromosoma& padre1, const Cromosoma& padre2, int num_dias, int num_periodos, int num_clases) {
     Cromosoma hijo(num_dias, num_periodos, num_clases);
-    
-    // El hijo hereda el horario completo de una clase, ya sea del Padre 1 o del Padre 2 al azar.
-    // Esto es vital en Timetabling para no alterar la sumatoria total de lecciones requeridas por ramo.
     for (int c = 0; c < num_clases; ++c) {
         bool heredarDePadre1 = (rand() % 2 == 0); 
-        
         for (int d = 0; d < num_dias; ++d) {
             for (int p = 0; p < num_periodos; ++p) {
                 hijo.matriz[d][p][c] = heredarDePadre1 ? padre1.matriz[d][p][c] : padre2.matriz[d][p][c];
@@ -204,127 +252,70 @@ Cromosoma cruzar(const Cromosoma& padre1, const Cromosoma& padre2, int num_dias,
     return hijo;
 }
 
-// --- NUEVO: OPERADOR UNARIO (MUTACIÓN) ---
 void mutar(Cromosoma& ind, int num_dias, int num_periodos, int num_clases) {
-    int prob_mutacion = 20; // 20% de probabilidad de que el hijo mute
-    
+    int prob_mutacion = 20; 
     if ((rand() % 100) < prob_mutacion) {
-        // Swap Intra-Clase: Mueve de lugar dos bloques de una misma clase
         int clase_mutar = rand() % num_clases;
         int d1 = rand() % num_dias, p1 = rand() % num_periodos;
         int d2 = rand() % num_dias, p2 = rand() % num_periodos;
-        
         swap(ind.matriz[d1][p1][clase_mutar], ind.matriz[d2][p2][clase_mutar]);
     }
 }
 
-// 4. SOLUCIÓN INICIAL (Heurística Greedy Randomizada)
-Cromosoma generarSolucionInicial(int num_dias, int num_periodos, int num_clases, vector<Requerimiento> reqs) {
-    Cromosoma ind(num_dias, num_periodos, num_clases);
-    
-    // Pre-procesar: Ordenar requerimientos priorizando los que exigen lecciones dobles (Greedy)
-    sort(reqs.begin(), reqs.end(), [](const Requerimiento& a, const Requerimiento& b) {
-        return a.lecciones_dobles_minimas > b.lecciones_dobles_minimas;
-    });
-
-    for (const auto& req : reqs) {
-        int asignadas = 0;
-        int intentos = 0; // Evitar ciclos infinitos
-        
-        while (asignadas < req.lecciones_totales && intentos < 1000) {
-            int d = rand() % num_dias;
-            int p = rand() % num_periodos;
-            
-            // Si requiere dobles y hay espacio, intentamos asignar 2 bloques seguidos
-            if (req.lecciones_dobles_minimas > 0 && p < num_periodos - 1 && asignadas <= req.lecciones_totales - 2) {
-                if (ind.matriz[d][p][req.clase_id] == -1 && ind.matriz[d][p+1][req.clase_id] == -1) {
-                    ind.matriz[d][p][req.clase_id] = req.id;
-                    ind.matriz[d][p+1][req.clase_id] = req.id;
-                    asignadas += 2;
-                    continue;
-                }
-            }
-            
-            // Asignación simple
-            if (ind.matriz[d][p][req.clase_id] == -1) {
-                ind.matriz[d][p][req.clase_id] = req.id;
-                asignadas++;
-            }
-            intentos++;
-        }
-    }
-    
-    // Rellenar espacios vacíos con requerimientos aleatorios de la misma clase (Para evitar soft-lock)
-    for(int d=0; d<num_dias; d++){
-        for(int p=0; p<num_periodos; p++){
-            for(int c=0; c<num_clases; c++){
-                if(ind.matriz[d][p][c] == -1) {
-                    for(const auto& r : reqs){
-                        if(r.clase_id == c){
-                            ind.matriz[d][p][c] = r.id;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return ind;
-}
-
-// 5. MOTOR DEL ALGORITMO EVOLUTIVO (ACTUALIZADO CON SECUENCIA CORRECTA)
-Cromosoma ejecutarAlgoritmoEvolutivo(int num_dias, int num_periodos, int num_clases, int num_profesores, 
-                                vector<Requerimiento>& reqs, vector<vector<vector<bool>>>& indisponibilidad) {
+// ==========================================
+// 6. MOTOR DEL ALGORITMO EVOLUTIVO
+// ==========================================
+Cromosoma ejecutarAlgoritmoEvolutivo(int num_dias, int num_periodos, int num_clases, int num_profesores, vector<Requerimiento>& reqs, vector<vector<vector<bool>>>& indisponibilidad) {
     int tamano_poblacion = 30;
     int generaciones = 200;
     vector<Cromosoma> poblacion;
 
-    // 1. Inicialización
     for (int i = 0; i < tamano_poblacion; ++i) {
         Cromosoma inicial = generarSolucionInicial(num_dias, num_periodos, num_clases, reqs);
         inicial.evaluarFitness(reqs, num_profesores, indisponibilidad);
         poblacion.push_back(inicial);
     }
 
-    // 2. Ciclo Evolutivo
+    // Selección por torneo
+    auto seleccionTorneo = [&]() {
+        int k = 3; // participantes
+        int mejor_idx = rand() % tamano_poblacion;
+        for(int i = 1; i < k; ++i) {
+            int idx = rand() % tamano_poblacion;
+            if(poblacion[idx].fitness < poblacion[mejor_idx].fitness) mejor_idx = idx;
+        }
+        return poblacion[mejor_idx];
+    };
+
     for (int gen = 0; gen < generaciones; ++gen) {
-        // Ordenar por fitness (menor es mejor, ya que son penalizaciones)
         sort(poblacion.begin(), poblacion.end(), [](const Cromosoma& a, const Cromosoma& b) {
             return a.fitness < b.fitness;
         });
 
         vector<Cromosoma> nueva_poblacion;
-        
-        // Elitismo: Conservar a los 2 mejores directamente a la siguiente generación
-        nueva_poblacion.push_back(poblacion[0]); 
-        nueva_poblacion.push_back(poblacion[1]);
+        nueva_poblacion.push_back(poblacion[0]); // Elitismo 1
+        nueva_poblacion.push_back(poblacion[1]); // Elitismo 2
 
         while (nueva_poblacion.size() < tamano_poblacion) {
-            // A. SELECCIÓN (Por Torneo simple favoreciendo a los mejores)
-            Cromosoma padre1 = poblacion[rand() % (tamano_poblacion / 2)]; 
-            Cromosoma padre2 = poblacion[rand() % (tamano_poblacion / 2)]; 
+            Cromosoma padre1 = seleccionTorneo(); 
+            Cromosoma padre2 = seleccionTorneo(); 
 
-            // B. CRUZAMIENTO (Operador Binario)
             Cromosoma hijo = cruzar(padre1, padre2, num_dias, num_periodos, num_clases);
-            
-            // C. MUTACIÓN (Operador Unario)
             mutar(hijo, num_dias, num_periodos, num_clases);
             
-            // D. EVALUACIÓN Y REEMPLAZO
             hijo.evaluarFitness(reqs, num_profesores, indisponibilidad);
             nueva_poblacion.push_back(hijo);
         }
-        
         poblacion = nueva_poblacion;
         
-        if(gen % 20 == 0) {
-            cout << "Generacion " << gen << " - Mejor Fitness (Costo Penalizaciones): " << poblacion[0].fitness << endl;
-        }
+        if(gen % 20 == 0) cout << "Generacion " << gen << " - Mejor Fitness: " << poblacion[0].fitness << endl;
     }
     return poblacion[0];
 };
 
-// 6. ARCHIVO DE SALIDA
+// ==========================================
+// 7. ARCHIVO DE SALIDA
+// ==========================================
 void escribirArchivoSalida(string nombreArchivo, int seed, double tiempo, const Cromosoma& mejor, int num_dias, int num_periodos, int num_clases, const vector<Requerimiento>& reqs, int alfa, int beta) {
     string base_name = nombreArchivo;
     size_t pos = base_name.find(".txt");
@@ -333,7 +324,7 @@ void escribirArchivoSalida(string nombreArchivo, int seed, double tiempo, const 
     string nombre_salida = base_name + "_" + to_string(seed) + ".txt";
     ofstream out(nombre_salida);
     
-    if(!out.is_open()) { cout << "Error al crear archivo de salida." << endl; return; }
+    if(!out.is_open()) return;
 
     out << "Valor de la Función Objetivo: " << mejor.fitness << ", Tiempo de cómputo: " << tiempo << " segundos" << endl;
     out << "Cantidad total de ventanas horarias entre todos los profesores: " << mejor.total_ventanas << ", Ponderación asociada: " << alfa << endl;
@@ -353,20 +344,21 @@ void escribirArchivoSalida(string nombreArchivo, int seed, double tiempo, const 
         }
     }
     out.close();
-    cout << "¡Exito! Archivo de salida generado: " << nombre_salida << endl;
-};
+}
 
-// 7. BLOQUE PRINCIPAL
+// ==========================================
+// 8. BLOQUE PRINCIPAL (MAIN)
+// ==========================================
 int main() {
     int num_dias, num_periodos, num_clases, num_profesores;
     vector<Requerimiento> requerimientos;
     vector<vector<vector<bool>>> indisponibilidad;
 
-    string archivo_instancia = "CL-CEASD-2008-V-A.txt"; // Cambia esto al nombre de tu archivo de prueba
+    string archivo_instancia = "CL-CEASD-2008-V-A.txt"; 
     int semilla = 12345; 
     srand(semilla);
 
-    leerInstanciaTXT(archivo_instancia, num_clases, num_profesores, num_dias, num_periodos, requerimientos, indisponibilidad);
+    leerTXT(archivo_instancia, num_clases, num_profesores, num_dias, num_periodos, requerimientos, indisponibilidad);
 
     if (!requerimientos.empty()) {
         auto start = chrono::high_resolution_clock::now();
@@ -375,10 +367,9 @@ int main() {
         
         auto end = chrono::high_resolution_clock::now();
         chrono::duration<double> elapsed = end - start;
-        double tiempo_computo = elapsed.count();
-
-        escribirArchivoSalida(archivo_instancia, semilla, tiempo_computo, mejor_horario, num_dias, num_periodos, num_clases, requerimientos, 50, 10);
+        
+        escribirArchivoSalida(archivo_instancia, semilla, elapsed.count(), mejor_horario, num_dias, num_periodos, num_clases, requerimientos, 50, 10);
+        cout << "Proceso terminado. Resultados en archivo txt." << endl;
     }
-
     return 0;
 }
