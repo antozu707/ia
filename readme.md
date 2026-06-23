@@ -14,9 +14,10 @@ El código fuente **NO requiere el uso de librerías externas**. Utiliza únicam
 ## Instrucciones de Compilación y Ejecución (Vía Makefile)
 Para compilar y ejecutar el proyecto a través de terminal, siga los siguientes pasos:
 
-1. Asegúrese de tener un compilador de C++ (`g++`) y `make` instalados en su sistema.
-2. Coloque el archivo de instancia (ej: `CL-CEASD-2008-V-A.txt`) en el directorio raíz junto al código.
-3. Abra la terminal en la carpeta del proyecto.
-4. Para compilar, ejecute el comando:
+1. Coloque el archivo de instancia (ej: `CL-CEASD-2008-V-A.txt`) en el directorio raíz junto al código.
+4. Para compilar, ejecute el comando en terminal:
    ```bash
    make
+5. Para correr el algoritmo, debe pasar la instancia y la semilla por consola:
+   ```bash
+   ./hstp.exe CL-CEASD-2008-V
