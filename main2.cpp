@@ -106,9 +106,9 @@ public:
         int alfa = 50; // Ponderación ventanas docentes
         int beta = 10; // Ponderación dobles faltantes
 
-        // A. Restricciones Duras (+1000 pts)
+        // A. Restricciones duras
         for (int d = 0; d < num_dias; ++d) {
-            vector<int> clases_por_req(reqs.size(), 0); 
+            vector<int> clases_por_req(reqs.size(), 0);
             
             for (int p = 0; p < num_periodos; ++p) {
                 vector<int> profes_en_periodo(num_profesores, 0);
@@ -118,24 +118,30 @@ public:
                     if (req_id != -1) {
                         int profe_id = reqs[req_id].profesor_id;
                         
+                        //Choque de profesores (crítico)
                         profes_en_periodo[profe_id]++;
-                        if (profes_en_periodo[profe_id] > 1) penalizacion += 1000; // Choque profe
-                        if (indisponibilidad[profe_id][d][p]) penalizacion += 1000; // Indisponible
+                        if (profes_en_periodo[profe_id] > 1) penalizacion += 1000; 
+                        
+                        //Indisponibilidad docente (grave)
+                        if (indisponibilidad[profe_id][d][p]) penalizacion += 500;
                         
                         clases_por_req[req_id]++;
                     } else {
-                        penalizacion += 1000; // Ventana de alumnos
+                        // 3. Ventanas de alumnos (crítico)
+                        penalizacion += 1000;
                     }
                 }
             }
+            // Límite máximo de clases por día para una asignatura (grave)
             for(size_t r = 0; r < reqs.size(); ++r) {
                 if (clases_por_req[r] > reqs[r].max_por_dia) {
-                    penalizacion += 1000 * (clases_por_req[r] - reqs[r].max_por_dia); // Exceso diario
+                    penalizacion += 500 * (clases_por_req[r] - reqs[r].max_por_dia);
                 }
             }
         }
 
-        // B. Restricciones Blandas
+        // B. Restricciones blandas
+        // Ventanas horarias de profesores
         for (int d = 0; d < num_dias; ++d) {
             for (int profe_id = 0; profe_id < num_profesores; ++profe_id) {
                 int primer_bloque = -1, ultimo_bloque = -1, bloques_ocupados = 0;
@@ -162,6 +168,7 @@ public:
             }
         }
         
+        // Lecciones dobles mínimas por asignatura
         for (const auto& req : reqs) {
             if (req.lecciones_dobles_minimas > 0) {
                 int dobles_encontradas = 0;
@@ -253,12 +260,26 @@ Cromosoma cruzar(const Cromosoma& padre1, const Cromosoma& padre2, int num_dias,
 }
 
 void mutar(Cromosoma& ind, int num_dias, int num_periodos, int num_clases) {
-    int prob_mutacion = 20; 
+    int prob_mutacion = 20; // Esto es el 20% que definimos en los Experimentos
     if ((rand() % 100) < prob_mutacion) {
         int clase_mutar = rand() % num_clases;
-        int d1 = rand() % num_dias, p1 = rand() % num_periodos;
-        int d2 = rand() % num_dias, p2 = rand() % num_periodos;
-        swap(ind.matriz[d1][p1][clase_mutar], ind.matriz[d2][p2][clase_mutar]);
+        int d1 = rand() % num_dias;
+        int d2 = rand() % num_dias;
+        
+        bool usarSwapDoble = (rand() % 2 == 0); // 50% de probabilidad para cada opción
+        
+        if (usarSwapDoble && num_periodos >= 2) {
+            // SWAP DE BLOQUE DOBLE
+            int p1 = rand() % (num_periodos - 1); // Asegura que p1+1 exista
+            int p2 = rand() % (num_periodos - 1);
+            swap(ind.matriz[d1][p1][clase_mutar], ind.matriz[d2][p2][clase_mutar]);
+            swap(ind.matriz[d1][p1+1][clase_mutar], ind.matriz[d2][p2+1][clase_mutar]);
+        } else {
+            // SWAP SIMPLE (El que ya tenías)
+            int p1 = rand() % num_periodos;
+            int p2 = rand() % num_periodos;
+            swap(ind.matriz[d1][p1][clase_mutar], ind.matriz[d2][p2][clase_mutar]);
+        }
     }
 }
 
