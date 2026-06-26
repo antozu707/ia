@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++14 -O3
 
-TARGET = hstp.exe
+TARGET = hstp
 SRCS = main.cpp cromosoma.cpp archivos.cpp algoritmo.cpp
 OBJS = $(SRCS:.cpp=.o)
 

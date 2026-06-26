@@ -1,6 +1,7 @@
 #include "algoritmo.h"
 #include <algorithm>
 #include <random>
+#include <iostream>
 
 Cromosoma generarSolucionInicial(int num_dias, int num_periodos, int num_clases, vector<Requerimiento> reqs) {
     Cromosoma ind(num_dias, num_periodos, num_clases);
@@ -59,7 +60,7 @@ Cromosoma cruzar(const Cromosoma& padre1, const Cromosoma& padre2, int num_dias,
 }
 
 void mutar(Cromosoma& ind, int num_dias, int num_periodos, int num_clases) {
-    int prob_mutacion = 20; 
+    int prob_mutacion = 30; 
     if ((rand() % 100) < prob_mutacion) {
         int clase_mutar = rand() % num_clases;
         int d1 = rand() % num_dias, p1 = rand() % num_periodos;
@@ -69,8 +70,8 @@ void mutar(Cromosoma& ind, int num_dias, int num_periodos, int num_clases) {
 }
 
 Cromosoma ejecutarAlgoritmoEvolutivo(int num_dias, int num_periodos, int num_clases, int num_profesores, vector<Requerimiento>& reqs, vector<vector<vector<bool>>>& indisponibilidad) {
-    int tamano_poblacion = 30;
-    int generaciones = 200;
+    int tamano_poblacion = 100;
+    int generaciones = 500;
     vector<Cromosoma> poblacion;
 
     for (int i = 0; i < tamano_poblacion; ++i) {
@@ -109,6 +110,11 @@ Cromosoma ejecutarAlgoritmoEvolutivo(int num_dias, int num_periodos, int num_cla
             nueva_poblacion.push_back(hijo);
         }
         poblacion = nueva_poblacion;
+
+        // ANALISIS DE CONVERGENCIA
+        if(gen == 0 || gen == 20 || gen == 50 || gen % 100 == 0 || gen == generaciones - 1) {
+            cout << "Generacion " << gen << " - Mejor Fitness: " << poblacion[0].fitness << endl;
+        }
     }
     return poblacion[0];
 }
