@@ -99,7 +99,7 @@ Cromosoma ejecutarAlgoritmoEvolutivo(int num_dias, int num_periodos, int num_cla
         nueva_poblacion.push_back(poblacion[0]); 
         nueva_poblacion.push_back(poblacion[1]); 
 
-        while (nueva_poblacion.size() < tamano_poblacion) {
+        while ((int)nueva_poblacion.size() < tamano_poblacion) {
             Cromosoma padre1 = seleccionTorneo(); 
             Cromosoma padre2 = seleccionTorneo(); 
 
