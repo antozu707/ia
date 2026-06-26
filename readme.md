@@ -8,7 +8,7 @@ El proyecto ha sido modularizado para facilitar la lectura y encapsulamiento:
 - `algoritmo.h algoritmo.cpp`: motor central del algoritmo genético (operadores de cruzamiento y mutación)
 - `main.cpp`: ejecución central
 
-Adicionalmente, se encuentra la carpeta `instancias` que contiene las instancias utilizadas para los experimentos, además de un subdirectorio `resultados_proyecto` con las ejecuciones de estas que fueron utilizadas para el análisis de resultados. Se adjunta también la planilla Excel en donde se fueron registrando los valores de Fitness y tiempo de ejecución.
+Adicionalmente, se encuentra la carpeta `instancias` que contiene las instancias utilizadas para los experimentos, además de un subdirectorio `resultados_proyecto` con las ejecuciones de estas que fueron utilizadas para el análisis de resultados. Se adjunta también la planilla Excel `resultados_proyecto_ia.xlsx` en donde se fueron registrando los valores de Fitness y tiempo de ejecución.
 
 ## Instrucciones
 Para compilar y ejecutar el proyecto a través de terminal en entorno Linux, se debe hacer lo siguiente:
