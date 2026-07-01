@@ -36,7 +36,7 @@ void Cromosoma::evaluarFitness(const vector<Requerimiento>& reqs, int num_profes
                     if (profes_en_periodo[profe_id] > 1) penalizacion += 1000; 
                     
                     //Indisponibilidad docente (grave)
-                    if (indisponibilidad[profe_id][d][p]) penalizacion += 1000;
+                    if (indisponibilidad[profe_id][d][p]) penalizacion += 500;
                     
                     clases_por_req[req_id]++;
                 } else {
@@ -49,7 +49,7 @@ void Cromosoma::evaluarFitness(const vector<Requerimiento>& reqs, int num_profes
         //Limite max de clases por dia para una asignatura (grave)
         for(size_t r = 0; r < reqs.size(); ++r) {
             if (clases_por_req[r] > reqs[r].max_por_dia) {
-                penalizacion += 1000 * (clases_por_req[r] - reqs[r].max_por_dia);
+                penalizacion += 500 * (clases_por_req[r] - reqs[r].max_por_dia);
             }
         }
     }
