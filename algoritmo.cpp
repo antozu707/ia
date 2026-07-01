@@ -59,6 +59,8 @@ Cromosoma cruzar(const Cromosoma& padre1, const Cromosoma& padre2, int num_dias,
     return hijo;
 }
 
+// MUTAR SIMPLE
+/*
 void mutar(Cromosoma& ind, int num_dias, int num_periodos, int num_clases) {
     int prob_mutacion = 30; 
     if ((rand() % 100) < prob_mutacion) {
@@ -66,6 +68,39 @@ void mutar(Cromosoma& ind, int num_dias, int num_periodos, int num_clases) {
         int d1 = rand() % num_dias, p1 = rand() % num_periodos;
         int d2 = rand() % num_dias, p2 = rand() % num_periodos;
         swap(ind.matriz[d1][p1][clase_mutar], ind.matriz[d2][p2][clase_mutar]);
+    }
+}
+*/
+
+// MUTAR HIBRIDO
+void mutar(Cromosoma& ind, int num_dias, int num_periodos, int num_clases) {
+    int prob_mutacion = 20; 
+    
+    if ((rand() % 100) < prob_mutacion) {
+        int c = rand() % num_clases;
+        int d1 = rand() % num_dias;
+        int p1 = rand() % num_periodos;
+        
+        int d2 = rand() % num_dias;
+        int p2 = rand() % num_periodos;
+
+        // agarrar bloque del principio
+        if (p1 > 0 && ind.matriz[d1][p1][c] == ind.matriz[d1][p1-1][c]) p1--;
+        if (p2 > 0 && ind.matriz[d2][p2][c] == ind.matriz[d2][p2-1][c]) p2--;
+        
+        bool doble1 = (p1 < num_periodos - 1 && ind.matriz[d1][p1][c] == ind.matriz[d1][p1+1][c]);
+        bool doble2 = (p2 < num_periodos - 1 && ind.matriz[d2][p2][c] == ind.matriz[d2][p2+1][c]);
+        
+        // si ambos son dobles => swap doble, se mueve p y p+1
+        if (doble1 && doble2) {
+            swap(ind.matriz[d1][p1][c], ind.matriz[d2][p2][c]);
+            swap(ind.matriz[d1][p1+1][c], ind.matriz[d2][p2+1][c]);
+        } 
+        // si ambos son simples => swap normal
+        else if (!doble1 && !doble2) {
+            swap(ind.matriz[d1][p1][c], ind.matriz[d2][p2][c]);
+        }
+        // si son una y una, no se muta para evitar romper la estructura de lecciones dobles
     }
 }
 
